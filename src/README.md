@@ -1,3 +1,14 @@
+# Query Requirements
+
+1. For each type of publication, count the total number of publications of that type between 2014- 2023. Your query should return a set of (publication-type, count) pairs. For example, (article, 20000), (inproceedings, 30000), ...
+2. Find all the conferences that have ever published more than 800 papers in one year. Note that one conference may be held every year (e.g., KDD runs many years, and each year the conference has a number of papers).
+3. For each 10 consecutive years starting from 1974, i.e., [1974, 1983], [1984, 1993],…, [2014, 2023], compute the total number of conference publications in DBLP in that 10 years. Hint: for this query you may want to compute a temporary table with all distinct years.
+4. Find the most collaborative authors who published in a conference or journal whose name contains “data” (e.g., ACM SIGKDD International Conference on Knowledge Discovery and Data Mining). That is, for each author determine its number of collaborators, and then find the author with the most number of collaborators. Hint: for this question you may want to compute a temporary table of coauthors.
+5. Data analytics and data science are very popular topics. Find the top 10 authors with the largest number of publications that are published in conferences and journals whose titles contain word “Data” in the last 5 years (2019 - 2023).
+6. List the name of the conferences such that it has ever been held in June, and the corresponding proceedings (in the year where the conference was held in June) contain more than 100 publications.
+7. (a) Find authors who have published at least 1 paper every year in the last 30 years (1994 - 2023), and whose family name start with ‘H’. (b) Find the names and number of publications for authors who have the earliest publication record in DBLP.
+8. Design a join query that is not in the above list.
+
 # Design plan
 
 1. **Publications** table
