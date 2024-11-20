@@ -45,6 +45,7 @@ class xmlparser(xml.sax.ContentHandler):
                 "type": tag, # publication type
                 "pub_id": attrs.get("key", ""), # publication id
                 "mdate": attrs.get("mdate",""), # publication date
+                "title": "", # publication title
                 "year": "", # publication year
                 "key_source": attrs.get("key", "").split("/")[0] if len(attrs.get("key", "").split("/")) > 0 else "", # publication source
                 "key_name": "/".join(attrs.get("key", "").split("/")[1:]) if len(attrs.get("key", "").split("/")) > 0 else "", # publication name
@@ -111,7 +112,11 @@ class xmlparser(xml.sax.ContentHandler):
 
             self.editors_writer.writerow(self.current_editor_data)
 
-
+            self.editor_pub_writer.writerow({
+                "editor_id": self.current_editor_orcid,
+                "editor_name": self.current_editor_data["name"],
+                "pub_id": self.current_pub_data["pub_id"]
+            })
 
         if tag == "journal":
             self.current_journal_data["name"] = html.unescape(self.current_data)
@@ -139,7 +144,7 @@ class xmlparser(xml.sax.ContentHandler):
             self.current_data = content.strip()
         
 
-def main(xml_file, pub_csv, author_csv, author_pub_csv, jrnls_csv, conf_csv, editors_csv, publisher_csv):
+def main(xml_file, pub_csv, author_csv, author_pub_csv, jrnls_csv, conf_csv, editors_csv, editor_pub_csv, publisher_csv):
 
     parser = xml.sax.make_parser()
     parser.setFeature(xml.sax.handler.feature_namespaces, 0)
@@ -150,14 +155,16 @@ def main(xml_file, pub_csv, author_csv, author_pub_csv, jrnls_csv, conf_csv, edi
             open(jrnls_csv, mode='w', newline="", encoding='utf-8') as jrnls_f, \
             open(conf_csv, mode='w', newline="", encoding='utf-8') as conf_f, \
             open(editors_csv, mode='w', newline="", encoding='utf-8') as editors_f, \
+            open(editor_pub_csv, mode='w', newline="", encoding='utf-8') as editor_pub_f, \
             open(publisher_csv, mode='w', newline="", encoding='utf-8') as publisher_f:
         
-        pub_fileds = ['type','pub_id','mdate','year','key_source','key_name','volume','publisher','journal','number','url','ee']
+        pub_fileds = ['type','pub_id','mdate','title','year','key_source','key_name','volume','publisher','journal','number','url','ee']
         author_fileds = ['author_id', 'name']
         author_pub_fileds = ['author_id', 'author_name', 'pub_id']
         jrnls_fileds = ['journal_id', 'name']
         conf_fileds = ['conf_id', 'name']
         editors_fileds = ['editor_id', 'name']
+        editor_pub_fileds = ['editor_id', 'editor_name', 'pub_id']
         publisher_fileds = ['publisher_id', 'name']
 
         pub_writer = csv.DictWriter(pub_f, fieldnames=pub_fileds)
@@ -166,6 +173,7 @@ def main(xml_file, pub_csv, author_csv, author_pub_csv, jrnls_csv, conf_csv, edi
         jrnls_writer = csv.DictWriter(jrnls_f, fieldnames=jrnls_fileds)
         conf_writer = csv.DictWriter(conf_f, fieldnames=conf_fileds)
         editors_writer = csv.DictWriter(editors_f, fieldnames=editors_fileds)
+        editor_pub_writer = csv.DictWriter(editor_pub_f, fieldnames=editor_pub_fileds)
         publisher_writer = csv.DictWriter(publisher_f, fieldnames=publisher_fileds)
 
         pub_writer.writeheader()
@@ -174,9 +182,10 @@ def main(xml_file, pub_csv, author_csv, author_pub_csv, jrnls_csv, conf_csv, edi
         jrnls_writer.writeheader()
         conf_writer.writeheader()
         editors_writer.writeheader()
+        editor_pub_writer.writeheader()
         publisher_writer.writeheader()
         
-        handler = xmlparser(pub_writer, author_writer, author_pub_writer, jrnls_writer, conf_writer, editors_writer, publisher_writer)
+        handler = xmlparser(pub_writer, author_writer, author_pub_writer, jrnls_writer, conf_writer, editors_writer, editor_pub_writer, publisher_writer)
         parser.setContentHandler(handler)
 
         with open(xml_file, 'r', encoding='utf-8') as f:
@@ -196,10 +205,14 @@ if __name__ == "__main__":
     jrnls_csv_path = "../ntu_sd6103_team_project_data/csv_files/journals.csv"
     conf_csv_path = "../ntu_sd6103_team_project_data/csv_files/conferences.csv"
     editors_csv_path = "../ntu_sd6103_team_project_data/csv_files/editors.csv"
-    
+    editors_pub_csv_path = "../ntu_sd6103_team_project_data/csv_files/editor_publications.csv"
     publisher_csv_path = "../ntu_sd6103_team_project_data/csv_files/publishers.csv"
-
-    main(xml_file_path, pub_csv_path, author_csv_path, author_pub_csv_path, jrnls_csv_path, conf_csv_path, editors_csv_path, publisher_csv_path)
+    
+    main(xml_file=xml_file_path, pub_csv=pub_csv_path,
+         author_csv=author_csv_path, author_pub_csv=author_pub_csv_path,
+         jrnls_csv=jrnls_csv_path, conf_csv=conf_csv_path,
+         editors_csv=editors_csv_path, editor_pub_csv=editors_pub_csv_path,
+         publisher_csv=publisher_csv_path)
 
 #%%
 # import pandas as pd
