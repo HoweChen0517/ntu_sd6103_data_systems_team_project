@@ -52,15 +52,6 @@ CREATE TABLE IF NOT EXISTS DBLP.publication_conferences (
     FOREIGN KEY (pub_id) REFERENCES DBLP.publication(pub_id),
     FOREIGN KEY (conf_id) REFERENCES DBLP.conference(conf_id)
 );
-CREATE TABLE IF NOT EXISTS DBLP.publication_journals (
-    pub_id VARCHAR(100) NOT NULL,
-    journal_id INT NOT NULL,
-    journal_name VARCHAR(100),
-    year INT,
-    PRIMARY KEY (pub_id, journal_id),
-    FOREIGN KEY (pub_id) REFERENCES DBLP.publication(pub_id),
-    FOREIGN KEY (journal_id) REFERENCES DBLP.journal(journal_id)
-);
 
 CREATE TABLE IF NOT EXISTS DBLP.authors(
     author_id CHAR(19) PRIMARY KEY NOT NULL,
