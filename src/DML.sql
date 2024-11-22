@@ -8,27 +8,8 @@
 -- ON ap.pub_id = p.pub_id
 -- WHERE a.name = 'Dacheng Tao'
 -- LIMIT 10;
-ALTER TABLE publication DISABLE KEYS;
-ALTER TABLE conference DISABLE KEYS;
-ALTER TABLE journal DISABLE KEYS;
-ALTER TABLE authors DISABLE KEYS;
-ALTER TABLE editors DISABLE KEYS;
-ALTER TABLE publisher DISABLE KEYS;
-ALTER TABLE publication_conferences DISABLE KEYS;
-ALTER TABLE author_publications DISABLE KEYS;
-ALTER TABLE conference_publisher DISABLE KEYS;
-ALTER TABLE editor_publications DISABLE KEYS;
 
-ALTER TABLE publication ENABLE KEYS;
-ALTER TABLE conference ENABLE KEYS;
-ALTER TABLE journal DISABLE KEYS;
-ALTER TABLE authors DISABLE KEYS;
-ALTER TABLE editors DISABLE KEYS;
-ALTER TABLE publisher DISABLE KEYS;
-ALTER TABLE publication_conferences DISABLE KEYS;
-ALTER TABLE author_publications DISABLE KEYS;
-ALTER TABLE conference_publisher DISABLE KEYS;
-ALTER TABLE editor_publications DISABLE KEYS;
+-----------------------------------FULL-----------------------------------
 
 -- 1. For each type of publication, count the total number of publications of that type between 2014- 2023. 
 -- Your query should return a set of (publication-type, count) pairs. 
@@ -442,8 +423,7 @@ FROM quarter_conference as c
 JOIN quarter_conference_publisher cp on c.conf_id = cp.conf_id
 JOIN quarter_Publisher p on cp.publisher_id = p.publisher_id;
 
---------------------------------------------Indexing--------------------------------------------
-
+--------------------------------------Basic Indexing--------------------------------------------
 CREATE FULLTEXT INDEX author_name_index ON authors(name);
 -- DROP INDEX author_name_index ON authors;
 CREATE FULLTEXT INDEX conf_name_index ON conference(conf_name);
@@ -478,6 +458,30 @@ CREATE INDEX conf_id on conference_publisher(conf_id);
 -- DROP INDEX conf_id on conference_publisher;
 CREATE INDEX publisher_id on conference_publisher(publisher_id);
 -- DROP INDEX publisher_id on conference_publisher;
+---------------------------------------Stragegy Indexing---------------------------------------
+CREATE INDEX comb_pub_year_type on publication(year, type);
+CREATE INDEX idx_pub_conf_confid_pubid ON DBLP.publication_conferences (conf_id, pub_id);
+CREATE INDEX idx_conf_confid_year ON DBLP.conference (conf_id, year);
+CREATE INDEX idx_conf_year ON DBLP.conference (year);
+CREATE FULLTEXT INDEX idx_conf_name ON DBLP.conference (conf_name);
+CREATE FULLTEXT INDEX idx_journal_name ON DBLP.journal (name);
+CREATE INDEX idx_pub_pubid_journalid ON DBLP.publication (pub_id, journal_id);
+CREATE INDEX idx_auth_pub_pubid ON DBLP.author_publications (pub_id, author_id);
+CREATE INDEX idx_pub_year_journalid_pubid ON DBLP.publication (year, journal_id, pub_id);
+CREATE INDEX idx_conf_name_confid ON DBLP.conference (conf_name, conf_id);
+CREATE INDEX idx_journal_name_journalid ON DBLP.journal (name, journal_id);
+CREATE INDEX idx_auth_pub_pubid_authorid ON DBLP.author_publications (pub_id, author_id);
+CREATE INDEX idx_pub_mdate_pubid ON DBLP.publication (mdate, pub_id);
+CREATE INDEX idx_pub_conf_confid_pubid ON DBLP.publication_conferences (conf_id, pub_id);
+CREATE INDEX idx_conf_confname_confid ON DBLP.conference (conf_name, conf_id);
+CREATE INDEX idx_auth_name_authorid ON DBLP.Authors (name, author_id);
+CREATE INDEX idx_auth_pub_authorid_pubid ON DBLP.author_publications (author_id, pub_id);
+CREATE INDEX idx_pub_year_pubid ON DBLP.publication (year, pub_id);
+CREATE INDEX idx_pub_year_pubid ON DBLP.publication (year, pub_id);
+CREATE INDEX idx_auth_pub_authorid_pubid ON DBLP.author_publications (author_id, pub_id);
+CREATE INDEX idx_conf_confid_confname ON DBLP.conference (conf_id, conf_name);
+CREATE INDEX idx_conf_pub_confid_publisherid ON DBLP.conference_publisher (conf_id, publisher_id);
+CREATE INDEX idx_publisher_publisherid_name ON DBLP.Publisher (publisher_id, name);
 
 --------------------------------------------Rerun--------------------------------------------
 
@@ -485,7 +489,6 @@ CREATE INDEX publisher_id on conference_publisher(publisher_id);
 -- 1. For each type of publication, count the total number of publications of that type between 2014- 2023. 
 -- Your query should return a set of (publication-type, count) pairs. 
 -- For example, (article, 20000), (inproceedings, 30000), ...
-CREATE INDEX comb_pub_year_type on publication(year, type);
 -- DROP INDEX comb_pub_year_type on publication;
 SELECT type, COUNT(pub_id) as count
 FROM DBLP.publication
@@ -495,8 +498,7 @@ GROUP BY type;
 -- 2. Find all the conferences that have ever published more than 800 papers in one year. 
 -- Note that one conference may be held every year 
 -- (e.g., KDD runs many years, and each year the conference has a number of papers).
-CREATE INDEX idx_pub_conf_confid_pubid ON DBLP.publication_conferences (conf_id, pub_id);
-CREATE INDEX idx_conf_confid_year ON DBLP.conference (conf_id, year);
+
 -- DROP INDEX idx_pub_conf_confid_pubid ON DBLP.publication_conferences;
 -- DROP INDEX idx_conf_confid_year ON DBLP.conference;
 SELECT pc.conf_id, c.conf_name, c.year, COUNT(pc.pub_id) as count
@@ -509,7 +511,6 @@ HAVING COUNT(pc.pub_id) >= 800;
 -- 3. For each 10 consecutive years starting from 1974, i.e., [1974, 1983], [1984, 1993],…, [2014, 2023], 
 -- compute the total number of conference publications in DBLP in that 10 years. 
 -- Hint: for this query you may want to compute a temporary table with all distinct years.
-CREATE INDEX idx_conf_year ON DBLP.conference (year);
 -- DROP INDEX idx_pub_conf_confid_pubid ON DBLP.publication_conferences;
 WITH DistinctYears AS (
     SELECT DISTINCT year
@@ -534,10 +535,6 @@ ORDER BY yr.start_year;
 -- That is, for each author determine its number of collaborators, 
 -- and then find the author with the most number of collaborators. 
 -- Hint: for this question you may want to compute a temporary table of coauthors.
-CREATE FULLTEXT INDEX idx_conf_name ON DBLP.conference (conf_name);
-CREATE FULLTEXT INDEX idx_journal_name ON DBLP.journal (name);
-CREATE INDEX idx_pub_pubid_journalid ON DBLP.publication (pub_id, journal_id);
-CREATE INDEX idx_auth_pub_pubid ON DBLP.author_publications (pub_id, author_id);
 WITH FilteredPub AS (
     SELECT DISTINCT p.pub_id
     FROM publication as p
@@ -567,10 +564,6 @@ LIMIT 1;
 -- 5. Data analytics and data science are very popular topics. 
 -- Find the top 10 authors with the largest number of publications that are published in conferences 
 -- and journals whose titles contain word “Data” in the last 5 years (2019 - 2023).
-CREATE INDEX idx_pub_year_journalid_pubid ON DBLP.publication (year, journal_id, pub_id);
-CREATE INDEX idx_conf_name_confid ON DBLP.conference (conf_name, conf_id);
-CREATE INDEX idx_journal_name_journalid ON DBLP.journal (name, journal_id);
-CREATE INDEX idx_auth_pub_pubid_authorid ON DBLP.author_publications (pub_id, author_id);
 SELECT a.name as author_name, COUNT(ap.pub_id) as num_publications
 FROM author_publications ap
 JOIN publication p on ap.pub_id = p.pub_id
@@ -587,9 +580,6 @@ LIMIT 10;
 -- 6. List the name of the conferences such that it has ever been held in June, 
 -- and the corresponding proceedings (in the year where the conference was held in June)
 -- contain more than 100 publications.
-CREATE INDEX idx_pub_mdate_pubid ON DBLP.publication (mdate, pub_id);
-CREATE INDEX idx_pub_conf_confid_pubid ON DBLP.publication_conferences (conf_id, pub_id);
-CREATE INDEX idx_conf_confname_confid ON DBLP.conference (conf_name, conf_id);
 SELECT 
     c.conf_name as conference_name, p.year as year_held_in_june, COUNT(pc.pub_id) as num_publications
 FROM 
@@ -609,9 +599,6 @@ ORDER BY
 
 -- 7. (a)Find authors who have published at least 1 paper every year in the last 30 years (1994 - 2023), 
 -- and whose family name start with ‘H’
-CREATE INDEX idx_auth_name_authorid ON DBLP.Authors (name, author_id);
-CREATE INDEX idx_auth_pub_authorid_pubid ON DBLP.author_publications (author_id, pub_id);
-CREATE INDEX idx_pub_year_pubid ON DBLP.publication (year, pub_id);
 SELECT a.name as author_name
 FROM Authors as a
 JOIN 
@@ -623,8 +610,6 @@ GROUP BY a.author_id, a.name
 HAVING COUNT(DISTINCT p.year) = 30;
 
 -- 7. (b)Find the names and number of publications for authors who have the earliest publication record in DBLP.
-CREATE INDEX idx_pub_year_pubid ON DBLP.publication (year, pub_id);
-CREATE INDEX idx_auth_pub_authorid_pubid ON DBLP.author_publications (author_id, pub_id);
 SELECT a.name as author_name, COUNT(ap.pub_id) as num_publications, MIN(p.year) as first_publication_year
 FROM Authors as a
 JOIN 
@@ -637,9 +622,6 @@ GROUP BY a.author_id, a.name
 ORDER BY num_publications DESC;
 
 -- 8. Design a join query that is not in the above list.
-CREATE INDEX idx_conf_confid_confname ON DBLP.conference (conf_id, conf_name);
-CREATE INDEX idx_conf_pub_confid_publisherid ON DBLP.conference_publisher (conf_id, publisher_id);
-CREATE INDEX idx_publisher_publisherid_name ON DBLP.Publisher (publisher_id, name);
 SELECT c.conf_name as conference_name, p.name as publisher_name
 FROM conference as c
 JOIN conference_publisher cp on c.conf_id = cp.conf_id
